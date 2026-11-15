@@ -79,6 +79,54 @@
 
     .btn-logout:hover { border-color: var(--red); color: var(--red); }
 
+    /* ── Settings panel ── */
+    .settings-btn {
+      padding: 0.4rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .settings-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    .settings-panel {
+      display: none;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .settings-panel.open { display: block; }
+    .settings-panel h4 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 1rem; }
+
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    .setting-row p { font-size: 0.9rem; color: var(--text); margin: 0; }
+    .setting-row small { color: var(--muted); font-size: 0.8rem; }
+
+    /* Toggle switch */
+    .toggle { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: #cbd5e1; border-radius: 99px; cursor: pointer; transition: 0.2s;
+    }
+    .toggle-slider:before {
+      content: ""; position: absolute;
+      width: 18px; height: 18px; left: 3px; bottom: 3px;
+      background: white; border-radius: 50%; transition: 0.2s;
+    }
+    .toggle input:checked + .toggle-slider { background: var(--primary); }
+    .toggle input:checked + .toggle-slider:before { transform: translateX(20px); }
+
     /* ── Main layout ── */
     .main {
       max-width: 1060px;
@@ -262,12 +310,28 @@
     <a href="/" class="nav-logo">Sleepker</a>
     <div class="nav-right">
       <span class="greeting" id="greeting"></span>
+      <button class="settings-btn" id="settings-btn">⚙ Settings</button>
       <button class="btn-logout" id="logout-btn">Log out</button>
     </div>
   </div>
 </nav>
 
 <div class="main">
+  <!-- Settings panel (hidden by default, opens on gear click) -->
+  <div class="settings-panel" id="settings-panel">
+    <h4>Settings</h4>
+    <div class="setting-row">
+      <div>
+        <p>Weekly email summary</p>
+        <small>Sent every Sunday at 9AM with your weekly stats.</small>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="email-toggle" checked />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
   <h1 class="page-title">Daily Check-In</h1>
   <p class="page-sub">Track your last 10 days of recovery.</p>
 
@@ -385,6 +449,27 @@
     await fetch("/api/logout", { method: "POST", headers: { "Authorization": "Bearer " + token } });
     localStorage.clear();
     window.location.href = "/";
+  });
+
+  // Settings panel toggle
+  document.getElementById("settings-btn").addEventListener("click", () => {
+    document.getElementById("settings-panel").classList.toggle("open");
+  });
+
+  // Load current email notification setting
+  fetch("/api/settings", { headers: { "Authorization": "Bearer " + token } })
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById("email-toggle").checked = data.email_notifications;
+    });
+
+  // Save setting when toggled
+  document.getElementById("email-toggle").addEventListener("change", async (e) => {
+    await fetch("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+      body: JSON.stringify({ email_notifications: e.target.checked })
+    });
   });
 
   // Rating buttons
