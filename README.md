@@ -16,7 +16,7 @@ Leveraged Knowledge in
 - **bcrypt** — password hashing
 - **uvicorn** — web server
 - **HTML / CSS / JavaScript** — frontend
-- **Chart.js** — 10-day readiness chart
+- **Chart.js** — 10-day chart
 
 ## DevOps
 
