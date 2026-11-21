@@ -297,9 +297,108 @@
     /* ── Chart ── */
     .chart-wrap { position: relative; height: 260px; }
 
+    /* ── Stats row ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1;
+      margin-bottom: 0.3rem;
+    }
+    .stat-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* ── Notes ── */
+    textarea {
+      width: 100%;
+      padding: 0.6rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: var(--soft);
+      color: var(--text);
+      resize: vertical;
+      min-height: 68px;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    textarea:focus { outline: none; border-color: var(--primary); background: #fff; }
+
+    /* ── History ── */
+    .history-toggle {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1.25rem;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 1.5rem;
+      transition: border-color 0.15s;
+    }
+    .history-toggle:hover { border-color: var(--primary); }
+    .history-toggle .arrow { font-size: 0.7rem; color: var(--muted); transition: transform 0.2s; }
+    .history-toggle.open .arrow { transform: rotate(180deg); }
+    #history-table-wrap { display: none; margin-top: 0.75rem; }
+    #history-table-wrap.open { display: block; }
+    .history-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .history-table th {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 2px solid var(--border);
+      background: var(--soft);
+    }
+    .history-table td {
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+    .history-table tr:last-child td { border-bottom: none; }
+    .score-pill {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 99px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .score-pill.high { background: #dcfce7; color: #166534; }
+    .score-pill.mid  { background: #fef9c3; color: #854d0e; }
+    .score-pill.low  { background: #fee2e2; color: #991b1b; }
+    .note-cell { color: var(--muted); font-style: italic; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
     @media (max-width: 768px) {
       .app-grid  { grid-template-columns: 1fr; }
       .form-grid { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .history-table th:nth-child(n+5),
+      .history-table td:nth-child(n+5) { display: none; }
     }
   </style>
 </head>
@@ -334,6 +433,26 @@
 
   <h1 class="page-title">Daily Check-In</h1>
   <p class="page-sub">Track your last 10 days of recovery.</p>
+
+  <!-- Stats row -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value" id="stat-streak">—</div>
+      <div class="stat-label">🔥 Day Streak</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-avg">—</div>
+      <div class="stat-label">📊 Avg (7 days)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-best">—</div>
+      <div class="stat-label">🏆 All-Time Best</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-total">—</div>
+      <div class="stat-label">📅 Total Check-Ins</div>
+    </div>
+  </div>
 
   <div class="app-grid">
 
@@ -416,6 +535,12 @@
           <p id="habit-error" style="color:var(--red);font-size:0.85rem;min-height:1.2em"></p>
         </div>
 
+        <!-- Notes -->
+        <div class="field" style="margin-top:0.75rem">
+          <label for="notes">Notes <span style="color:var(--muted);font-weight:400;text-transform:none">(optional)</span></label>
+          <textarea id="notes" placeholder="How are you feeling? Anything noteworthy today…"></textarea>
+        </div>
+
         <button type="submit" class="btn-submit">Save Check-In</button>
         <p id="checkin-status"></p>
 
@@ -431,6 +556,30 @@
     </div>
 
   </div>
+
+  <!-- History -->
+  <button class="history-toggle" id="history-toggle">
+    Past Check-Ins <span class="arrow">▼</span>
+  </button>
+  <div id="history-table-wrap">
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="history-table" id="history-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Score</th>
+            <th>Sleep</th>
+            <th>HR</th>
+            <th>Energy</th>
+            <th>Mood</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="history-body"></tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -547,13 +696,63 @@
     if (res.status === 401) { localStorage.clear(); window.location.href = "/"; return; }
     const logs = await res.json();
     logs.sort((a, b) => a.date.localeCompare(b.date));
+
+    // Chart (last 10)
     const last10 = logs.slice(-10);
     chart.data.labels           = last10.map(l => l.date);
     chart.data.datasets[0].data = last10.map(l => l.readiness_score);
     chart.update();
+
+    // Stats
+    const total = logs.length;
+    const best  = total ? Math.round(Math.max(...logs.map(l => l.readiness_score))) : 0;
+    const last7 = logs.slice(-7);
+    const avg7  = last7.length ? Math.round(last7.reduce((s, l) => s + l.readiness_score, 0) / last7.length) : 0;
+
+    // Streak: count consecutive days ending today
+    let streak = 0;
+    if (total) {
+      const today = new Date().toISOString().slice(0, 10);
+      const dateSet = new Set(logs.map(l => l.date));
+      let d = new Date(today);
+      while (dateSet.has(d.toISOString().slice(0, 10))) {
+        streak++;
+        d.setDate(d.getDate() - 1);
+      }
+    }
+
+    document.getElementById("stat-streak").textContent = streak;
+    document.getElementById("stat-avg").textContent    = avg7 || "—";
+    document.getElementById("stat-best").textContent   = best || "—";
+    document.getElementById("stat-total").textContent  = total;
+
+    // History table (newest first)
+    const tbody = document.getElementById("history-body");
+    tbody.innerHTML = "";
+    [...logs].reverse().forEach(l => {
+      const s = Math.round(l.readiness_score);
+      const cls = s >= 70 ? "high" : s >= 45 ? "mid" : "low";
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${l.date}</td>
+        <td><span class="score-pill ${cls}">${s}</span></td>
+        <td>${l.sleep_hours}h</td>
+        <td>${l.resting_hr} bpm</td>
+        <td>${l.energy}/5</td>
+        <td>${l.mood}/5</td>
+        <td class="note-cell" title="${(l.notes || "").replace(/"/g, "&quot;")}">${l.notes || ""}</td>
+      `;
+      tbody.appendChild(row);
+    });
   }
 
   loadData();
+
+  // History toggle
+  document.getElementById("history-toggle").addEventListener("click", () => {
+    document.getElementById("history-toggle").classList.toggle("open");
+    document.getElementById("history-table-wrap").classList.toggle("open");
+  });
 
   // Form submit
   document.getElementById("checkin-form").addEventListener("submit", async (e) => {
@@ -586,7 +785,8 @@
       sleep_hours:    parseFloat(document.getElementById("sleep_hours").value),
       soreness, energy, mood,
       cardio_minutes: parseInt(document.getElementById("cardio_minutes").value) || 0,
-      alcohol_use, naps
+      alcohol_use, naps,
+      notes:          document.getElementById("notes").value.trim() || null
     };
 
     const res = await fetch("/api/checkin", {
@@ -606,6 +806,7 @@
     statusEl.textContent = "✓ Check-in saved!";
     statusEl.className   = "ok";
     document.querySelectorAll(".rating-group button, .habit-group button").forEach(b => b.classList.remove("selected"));
+    document.getElementById("notes").value = "";
     updateHabitBadge();
     loadData();
   });

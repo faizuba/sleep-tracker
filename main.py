@@ -65,6 +65,7 @@ class DailyLog(SQLModel, table=True):
     cardio_minutes: int = Field(default=0)
     alcohol_use: bool = Field(default=False)
     naps:        bool = Field(default=False)
+    notes: Optional[str] = Field(default=None)
     # ── ADD MORE HABITS HERE ─────────────────────────────────────────────────
     # Example: meditation: bool = Field(default=False)
 
@@ -81,6 +82,11 @@ from sqlalchemy import text
 with Session(engine) as _s:
     try:
         _s.exec(text("ALTER TABLE user ADD COLUMN email_notifications BOOLEAN DEFAULT 1"))
+        _s.commit()
+    except Exception:
+        pass
+    try:
+        _s.exec(text("ALTER TABLE dailylog ADD COLUMN notes TEXT"))
         _s.commit()
     except Exception:
         pass  # column already exists — safe to ignore
@@ -105,6 +111,7 @@ class CheckInCreate(SQLModel):
     cardio_minutes: int = 0
     alcohol_use: bool = False
     naps:        bool = False
+    notes: Optional[str] = None
     # ── ADD MORE HABITS HERE ─────────────────────────────────────────────────
 
 
